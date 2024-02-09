@@ -24,17 +24,17 @@ dependencies {
 }
 
 // Apply a specific Java toolchain to ease working on different environments.
-java {
-    toolchain {
-        languageVersion = JavaLanguageVersion.of(19)
-    }
-}
+java { toolchain { languageVersion = JavaLanguageVersion.of(19) } }
 
 application {
     // Define the main class for the application.
     mainClass = "leafchage.lox.LoxKt"
 }
 
-tasks.withType<JavaExec>() {
-    standardInput = System.`in`
+tasks.withType<JavaExec>() { standardInput = System.`in` }
+
+tasks.register<JavaExec>("gene_ast") {
+    classpath = sourceSets["main"].runtimeClasspath
+    mainClass = "leafchage.lox.tool.GenerateAstKt"
 }
+

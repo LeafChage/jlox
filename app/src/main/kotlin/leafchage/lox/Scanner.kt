@@ -73,7 +73,7 @@ public class Scanner(val source: String) {
                 } else if (c.isAlpha()) {
                     identifier()
                 } else {
-                    error(line, "Unexpected")
+                    Lox.error(line, "Unexpected")
                 }
             }
         }
@@ -119,7 +119,7 @@ public class Scanner(val source: String) {
         }
 
         if (isAtEnd()) {
-            error(line, "Unterminated string.")
+            Lox.error(line, "Unterminated string.")
             return
         }
 
@@ -142,7 +142,7 @@ public class Scanner(val source: String) {
     private fun isAtEnd() = current >= source.length
 
     // check next
-    private fun peek() = if (isAtEnd()) '\u0000' else source.get(current + 1)
+    private fun peek() = if (isAtEnd()) '\u0000' else source.get(current)
 
     // check next to next
     private fun peekNext(): Char =

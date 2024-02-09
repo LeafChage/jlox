@@ -1,4 +1,4 @@
-package leafchage.lox;
+package leafchage.lox
 
 enum class TokenType {
     LEFT_PAREN,
@@ -11,7 +11,9 @@ enum class TokenType {
     PLUS,
     SEMICOLON,
     SLASH,
+    // *
     STAR,
+    // !
     BANG,
     BANG_EQUAL,
     EQUAL,

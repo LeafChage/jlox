@@ -4,17 +4,6 @@ import java.nio.charset.Charset
 import java.nio.file.Files
 import java.nio.file.Paths
 
-var hadError = false
-
-fun error(line: Int, msg: String) {
-    report(line, "", msg)
-}
-
-fun report(line: Int, where: String, msg: String) {
-    System.err.println(String.format("[line %d ] Error%s: %s", line, where, msg))
-    hadError = true
-}
-
 fun main(args: Array<String>) {
     val app = Lox()
     if (args.size > 1) {
@@ -28,6 +17,26 @@ fun main(args: Array<String>) {
 }
 
 public class Lox {
+    companion object {
+        var hadError = false
+        public fun error(token: Token, msg: String) {
+            if (token.type == TokenType.EOF) {
+                report(token.line, "at end", msg)
+            } else {
+                report(token.line, String.format(" at '%s'", token.lexeme), msg)
+            }
+        }
+
+        public fun error(line: Int, msg: String) {
+            report(line, "", msg)
+        }
+
+        public fun report(line: Int, where: String, msg: String) {
+            System.err.println(String.format("[line %d ] Error%s: %s", line, where, msg))
+            hadError = true
+        }
+    }
+
     public fun runFile(path: String) {
         val bytes = Files.readAllBytes(Paths.get(path))
         run(String(bytes, Charset.defaultCharset()))
@@ -44,7 +53,7 @@ public class Lox {
                 break
             } else {
                 run(line)
-                hadError = true
+                hadError = false
             }
         }
     }
@@ -52,9 +61,12 @@ public class Lox {
     private fun run(source: String) {
         val scanner = Scanner(source)
         val tokens = scanner.scanTokens()
-
-        for (token in tokens) {
-            System.out.println(token)
+        val parser = Parser(tokens)
+        val expression = parser.parse()
+        if (hadError || expression == null) {
+            return
         }
+
+        System.out.println(AstPrinter().print(expression))
     }
 }
