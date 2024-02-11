@@ -104,7 +104,7 @@ public class Scanner(val source: String) {
                 advance()
             }
         }
-        val value = source.substring(start, current)
+        val value = source.substring(start, current).toDouble()
         addToken(TokenType.NUMBER, value)
     }
 

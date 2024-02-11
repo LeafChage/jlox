@@ -19,12 +19,19 @@ fun main(args: Array<String>) {
 public class Lox {
     companion object {
         var hadError = false
+        var hadRuntimeError = false
+        val interpreter = Interpriter()
         public fun error(token: Token, msg: String) {
             if (token.type == TokenType.EOF) {
                 report(token.line, "at end", msg)
             } else {
                 report(token.line, String.format(" at '%s'", token.lexeme), msg)
             }
+        }
+
+        public fun runtimeError(err: RuntimeError) {
+            System.err.println(String.format("%s\n[line %d ]", err.message, err.token.line))
+            hadRuntimeError = true
         }
 
         public fun error(line: Int, msg: String) {
@@ -42,6 +49,9 @@ public class Lox {
         run(String(bytes, Charset.defaultCharset()))
         if (hadError) {
             System.exit(65)
+        }
+        if (hadRuntimeError) {
+            System.exit(70)
         }
     }
 
@@ -66,7 +76,6 @@ public class Lox {
         if (hadError || expression == null) {
             return
         }
-
-        System.out.println(AstPrinter().print(expression))
+        interpreter.interpret(expression)
     }
 }
