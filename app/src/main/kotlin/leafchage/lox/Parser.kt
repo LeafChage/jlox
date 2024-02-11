@@ -5,12 +5,47 @@ public class Parser(val tokens: List<Token>) {
 
     var current = 0
 
-    public fun parse(): Expr? {
-        try {
-            return expression()
-        } catch (e: ParserError) {
-            return null;
+    public fun parse(): List<Stmt> {
+        val statements = ArrayList<Stmt>()
+        while (!isAtEnd()) {
+            val s = declaration()
+            if (s != null) {
+                statements.add(s)
+            }
         }
+        return statements
+    }
+
+    private fun declaration(): Stmt? {
+        try {
+            return if (match(TokenType.VAR)) varDeclaration() else statement()
+        } catch (err: ParserError) {
+            synchronize()
+            return null
+        }
+    }
+
+    private fun varDeclaration(): Stmt? {
+        val name = consume(TokenType.INDETIFIER, "Expect variable name.")
+        val init = if (match(TokenType.EQUAL)) expression() else null
+        consume(TokenType.SEMICOLON, "Expect ';' after variable declaration.")
+        return Stmt.Var(name, init)
+    }
+
+    private fun statement(): Stmt {
+        return if (match(TokenType.PRINT)) printStatement() else expressionStatement()
+    }
+
+    private fun printStatement(): Stmt {
+        val value = expression()
+        consume(TokenType.SEMICOLON, "Expect ';' after value")
+        return Stmt.Print(value)
+    }
+
+    private fun expressionStatement(): Stmt {
+        val expr = expression()
+        consume(TokenType.SEMICOLON, "Expect ';' after expression")
+        return Stmt.Expression(expr)
     }
 
     private fun expression(): Expr {
@@ -25,7 +60,7 @@ public class Parser(val tokens: List<Token>) {
         )) {
             val operator = previous()
             val right = comparsion()
-            expr = Binary(expr, operator, right)
+            expr = Expr.Binary(expr, operator, right)
         }
         return expr
     }
@@ -40,7 +75,7 @@ public class Parser(val tokens: List<Token>) {
         )) {
             val operator = previous()
             val right = term()
-            expr = Binary(expr, operator, right)
+            expr = Expr.Binary(expr, operator, right)
         }
         return expr
     }
@@ -50,7 +85,7 @@ public class Parser(val tokens: List<Token>) {
         while (match(TokenType.MINUS, TokenType.PLUS)) {
             val operator = previous()
             val right = factor()
-            expr = Binary(expr, operator, right)
+            expr = Expr.Binary(expr, operator, right)
         }
         return expr
     }
@@ -60,7 +95,7 @@ public class Parser(val tokens: List<Token>) {
         while (match(TokenType.SLASH, TokenType.STAR)) {
             val operator = previous()
             val right = unary()
-            expr = Binary(expr, operator, right)
+            expr = Expr.Binary(expr, operator, right)
         }
         return expr
     }
@@ -69,28 +104,31 @@ public class Parser(val tokens: List<Token>) {
         if (match(TokenType.BANG, TokenType.MINUS)) {
             val operator = previous()
             val right = unary()
-            return Unary(operator, right)
+            return Expr.Unary(operator, right)
         }
         return primary()
     }
 
     private fun primary(): Expr {
         if (match(TokenType.FALSE)) {
-            return Literal(false)
+            return Expr.Literal(false)
         }
         if (match(TokenType.TRUE)) {
-            return Literal(true)
+            return Expr.Literal(true)
         }
         if (match(TokenType.NIL)) {
-            return Literal(null)
+            return Expr.Literal(null)
         }
         if (match(TokenType.NUMBER, TokenType.STRING)) {
-            return Literal(previous().literal)
+            return Expr.Literal(previous().literal)
         }
         if (match(TokenType.LEFT_PAREN)) {
             val expr = expression()
             consume(TokenType.RIGHT_PAREN, "Expect ')' after expression")
-            return Grouping(expr)
+            return Expr.Grouping(expr)
+        }
+        if (match(TokenType.INDETIFIER)) {
+            return Expr.Variable(previous())
         }
         throw error(peek(), "Expect expression.")
     }
@@ -117,6 +155,7 @@ public class Parser(val tokens: List<Token>) {
         return previous()
     }
 
+    // check next expected token.
     private fun consume(type: TokenType, msg: String): Token {
         if (check(type)) {
             return advance()

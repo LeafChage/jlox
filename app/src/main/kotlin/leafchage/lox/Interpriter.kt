@@ -1,15 +1,36 @@
 package leafchage.lox
 
-public class Interpriter : Visitor<Any?> {
-    public fun interpret(expression: Expr) {
+public class Interpriter : Expr.Visitor<Any?>, Stmt.Visitor<Unit> {
+    private val environment = Environment()
+    public fun interpret(statements: List<Stmt>) {
         try {
-            val value = evaluate(expression)
-            System.out.println(stringify(value))
+            for (stmt in statements) {
+                execute(stmt)
+            }
         } catch (err: RuntimeError) {
             Lox.runtimeError(err)
         }
     }
-    public override fun visitBinaryExpr(expr: Binary): Any? {
+
+    private fun execute(stmt: Stmt) {
+        stmt.accept(this)
+    }
+
+    public override fun visitExpressionStmt(stmt: Stmt.Expression): Unit {
+        evaluate(stmt.expression)
+    }
+
+    public override fun visitPrintStmt(stmt: Stmt.Print): Unit {
+        val v = evaluate(stmt.expression)
+        System.out.println(stringify(v))
+    }
+
+    public override fun visitVarStmt(stmt: Stmt.Var): Unit {
+        val v = if (stmt.initializer != null) evaluate(stmt.initializer) else null
+        environment.define(stmt.name.lexeme, v)
+    }
+
+    public override fun visitBinaryExpr(expr: Expr.Binary): Any? {
         val right = evaluate(expr.right)
         val left = evaluate(expr.left)
         return when (expr.operator.type) {
@@ -51,15 +72,15 @@ public class Interpriter : Visitor<Any?> {
         }
     }
 
-    public override fun visitGroupingExpr(expr: Grouping): Any? {
+    public override fun visitGroupingExpr(expr: Expr.Grouping): Any? {
         return evaluate(expr.expression)
     }
 
-    public override fun visitLiteralExpr(expr: Literal): Any? {
+    public override fun visitLiteralExpr(expr: Expr.Literal): Any? {
         return expr.value
     }
 
-    public override fun visitUnaryExpr(expr: Unary): Any? {
+    public override fun visitUnaryExpr(expr: Expr.Unary): Any? {
         val right = evaluate(expr.right)
         return when (expr.operator.type) {
             TokenType.BANG -> !isTruthy(right)
@@ -67,6 +88,8 @@ public class Interpriter : Visitor<Any?> {
             else -> throw UnreachableException()
         }
     }
+
+    public override fun visitVariableExpr(expr: Expr.Variable): Any? = environment.get(expr.name)
 
     private fun castNumberOrFailed(ope: Token, v: Any?): Double {
         if (v == null || v !is Double) {

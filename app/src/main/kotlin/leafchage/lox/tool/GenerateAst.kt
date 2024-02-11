@@ -42,7 +42,29 @@ fun main(args: Array<String>) {
                     "Unary",
                     Field("operator", "Token"),
                     Field("right", "Expr"),
+            ),
+            Ast(
+                    "Variable",
+                    Field("name", "Token"),
             )
+    )
+
+    defineAst(
+            output,
+            "Stmt",
+            Ast(
+                    "Expression",
+                    Field("expression", "Expr"),
+            ),
+            Ast(
+                    "Print",
+                    Field("expression", "Expr"),
+            ),
+            Ast(
+                    "Var",
+                    Field("name", "Token"),
+                    Field("initializer", "Expr?"),
+            ),
     )
 }
 
@@ -54,23 +76,16 @@ fun defineAst(outputDir: String, baseName: String, vararg types: Ast) {
 
     writer.println(String.format("package %s", packageName))
     writer.println()
-    // writer.println("import java.util.List")
-    writer.println()
-    defineSuper(writer, baseName)
-
+    writer.println(String.format("abstract class %s {", baseName))
+    writer.println("abstract fun<R> accept(v: Visitor<R>): R")
     defineVisitor(writer, baseName, types.asList())
     for (type in types) {
         defineType(writer, baseName, type)
         writer.println()
     }
+    writer.println("}")
 
     writer.close()
-}
-
-fun defineSuper(writer: PrintWriter, name: String) {
-    writer.println(String.format("abstract class %s {", name))
-    writer.println("  abstract fun<R> accept(v: Visitor<R>): R")
-    writer.println("}")
 }
 
 fun defineType(writer: PrintWriter, baseName: String, type: Ast) {
@@ -82,9 +97,9 @@ fun defineType(writer: PrintWriter, baseName: String, type: Ast) {
                     baseName,
             )
     )
-    writer.println("  override fun <R> accept(v: Visitor<R>): R {")
-    writer.println(String.format("    return v.visit%s%s(this)", type.name, baseName))
-    writer.println("  }")
+    writer.println("override fun <R> accept(v: Visitor<R>): R {")
+    writer.println(String.format("return v.visit%s%s(this)", type.name, baseName))
+    writer.println("}")
     writer.println("}")
 }
 
@@ -93,7 +108,7 @@ fun defineVisitor(writer: PrintWriter, baseName: String, types: List<Ast>) {
     for (type in types) {
         writer.println(
                 String.format(
-                        "  fun %s(%s): R",
+                        "fun %s(%s): R",
                         String.format("visit%s%s", type.name, baseName),
                         String.format("%s: %s", baseName.lowercase(), type.name)
                 )
