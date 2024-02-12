@@ -25,6 +25,11 @@ fun main(args: Array<String>) {
             output,
             "Expr",
             Ast(
+                    "Assign",
+                    Field("name", "Token"),
+                    Field("value", "Expr"),
+            ),
+            Ast(
                     "Binary",
                     Field("left", "Expr"),
                     Field("operator", "Token"),
@@ -46,7 +51,7 @@ fun main(args: Array<String>) {
             Ast(
                     "Variable",
                     Field("name", "Token"),
-            )
+            ),
     )
 
     defineAst(
@@ -55,6 +60,10 @@ fun main(args: Array<String>) {
             Ast(
                     "Expression",
                     Field("expression", "Expr"),
+            ),
+            Ast(
+                    "Block",
+                    Field("statements", "List<Stmt>"),
             ),
             Ast(
                     "Print",

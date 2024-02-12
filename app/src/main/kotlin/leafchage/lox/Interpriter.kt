@@ -1,7 +1,7 @@
 package leafchage.lox
 
 public class Interpriter : Expr.Visitor<Any?>, Stmt.Visitor<Unit> {
-    private val environment = Environment()
+    private var environment = Environment()
     public fun interpret(statements: List<Stmt>) {
         try {
             for (stmt in statements) {
@@ -16,6 +16,10 @@ public class Interpriter : Expr.Visitor<Any?>, Stmt.Visitor<Unit> {
         stmt.accept(this)
     }
 
+    public override fun visitBlockStmt(stmt: Stmt.Block): Unit {
+        executeBlock(stmt, Environment(environment))
+    }
+
     public override fun visitExpressionStmt(stmt: Stmt.Expression): Unit {
         evaluate(stmt.expression)
     }
@@ -26,8 +30,11 @@ public class Interpriter : Expr.Visitor<Any?>, Stmt.Visitor<Unit> {
     }
 
     public override fun visitVarStmt(stmt: Stmt.Var): Unit {
-        val v = if (stmt.initializer != null) evaluate(stmt.initializer) else null
-        environment.define(stmt.name.lexeme, v)
+        if (stmt.initializer == null) {
+            environment.define(stmt.name.lexeme)
+        } else {
+            environment.define(stmt.name.lexeme, evaluate(stmt.initializer))
+        }
     }
 
     public override fun visitBinaryExpr(expr: Expr.Binary): Any? {
@@ -91,6 +98,12 @@ public class Interpriter : Expr.Visitor<Any?>, Stmt.Visitor<Unit> {
 
     public override fun visitVariableExpr(expr: Expr.Variable): Any? = environment.get(expr.name)
 
+    public override fun visitAssignExpr(expr: Expr.Assign): Any? {
+        val value = evaluate(expr.value)
+        environment.assign(expr.name, value)
+        return value
+    }
+
     private fun castNumberOrFailed(ope: Token, v: Any?): Double {
         if (v == null || v !is Double) {
             throw RuntimeError(ope, "Operand must be a number")
@@ -115,6 +128,18 @@ public class Interpriter : Expr.Visitor<Any?>, Stmt.Visitor<Unit> {
             false
         } else {
             left.equals(right)
+        }
+    }
+
+    private fun executeBlock(block: Stmt.Block, innerEnv: Environment): Unit {
+        val outerEnv = environment
+        try {
+            this.environment = innerEnv
+            for (stmt in block.statements) {
+                execute(stmt)
+            }
+        } finally {
+            this.environment = outerEnv
         }
     }
 

@@ -1,5 +1,7 @@
 package leafchage.lox
 
+import kotlin.collections.mutableListOf
+
 public class Parser(val tokens: List<Token>) {
     class ParserError : RuntimeException() {}
 
@@ -32,8 +34,20 @@ public class Parser(val tokens: List<Token>) {
         return Stmt.Var(name, init)
     }
 
-    private fun statement(): Stmt {
-        return if (match(TokenType.PRINT)) printStatement() else expressionStatement()
+    private fun statement(): Stmt =
+            if (match(TokenType.PRINT)) printStatement()
+            else if (match(TokenType.LEFT_BRACE)) block() else expressionStatement()
+
+    private fun block(): Stmt {
+        var statements = mutableListOf<Stmt>()
+        while (!check(TokenType.RIGHT_BRACE) && !isAtEnd()) {
+            val d = declaration()
+            if (d != null) {
+                statements.add(d)
+            }
+        }
+        consume(TokenType.RIGHT_BRACE, "Expect '}' after block")
+        return Stmt.Block(statements)
     }
 
     private fun printStatement(): Stmt {
@@ -49,7 +63,22 @@ public class Parser(val tokens: List<Token>) {
     }
 
     private fun expression(): Expr {
-        return equality()
+        return assignment()
+    }
+
+    private fun assignment(): Expr {
+        val expr = equality()
+        if (match(TokenType.EQUAL)) {
+            val equal = previous()
+            val value = assignment()
+            if (expr is Expr.Variable) {
+                val name = expr.name
+                return Expr.Assign(name, value)
+            }
+            error(equal, "Invalid assignment target.")
+        }
+
+        return expr
     }
 
     private fun equality(): Expr {
