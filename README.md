@@ -33,3 +33,4 @@ primary     -> NUMBER | STRING | "true" | "false" | "nil" | "(" expression ")" |
 
 ## Task
 * [] break
+* [] lambda expression

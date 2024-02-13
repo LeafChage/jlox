@@ -47,7 +47,7 @@ public class Interpriter : Expr.Visitor<Any?>, Stmt.Visitor<Unit> {
     }
 
     public override fun visitFunctionStmt(stmt: Stmt.Function): Unit {
-        val fn = LoxFunction(stmt)
+        val fn = LoxFunction(stmt, environment)
         environment.define(stmt.name.lexeme, fn)
     }
 
