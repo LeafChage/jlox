@@ -16,6 +16,22 @@ public class Interpriter : Expr.Visitor<Any?>, Stmt.Visitor<Unit> {
         stmt.accept(this)
     }
 
+    public override fun visitWhileStmt(stmt: Stmt.While): Unit {
+        while (isTruthy(evaluate(stmt.condition))) {
+            execute(stmt.body)
+        }
+    }
+
+    public override fun visitIfStmt(stmt: Stmt.If): Unit {
+        if (isTruthy(evaluate(stmt.condition))) {
+            execute(stmt.thenBranch)
+        } else {
+            if (stmt.elseBranch != null) {
+                execute(stmt.elseBranch)
+            }
+        }
+    }
+
     public override fun visitBlockStmt(stmt: Stmt.Block): Unit {
         executeBlock(stmt, Environment(environment))
     }
@@ -85,6 +101,27 @@ public class Interpriter : Expr.Visitor<Any?>, Stmt.Visitor<Unit> {
 
     public override fun visitLiteralExpr(expr: Expr.Literal): Any? {
         return expr.value
+    }
+
+    public override fun visitLogicalExpr(expr: Expr.Logical): Any? {
+        val left = evaluate(expr.left)
+        return when (expr.operator.type) {
+            TokenType.OR ->
+                    if (isTruthy(left)) {
+                        left
+                    } else {
+                        evaluate(expr.right)
+                    }
+            TokenType.AND ->
+                    if (!isTruthy(left)) {
+                        left
+                    } else {
+                        evaluate(expr.right)
+                    }
+            else -> {
+                throw UnreachableException()
+            }
+        }
     }
 
     public override fun visitUnaryExpr(expr: Expr.Unary): Any? {

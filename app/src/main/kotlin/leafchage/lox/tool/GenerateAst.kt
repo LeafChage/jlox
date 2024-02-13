@@ -44,6 +44,12 @@ fun main(args: Array<String>) {
                     Field("value", "Any?"),
             ),
             Ast(
+                    "Logical",
+                    Field("left", "Expr"),
+                    Field("operator", "Token"),
+                    Field("right", "Expr"),
+            ),
+            Ast(
                     "Unary",
                     Field("operator", "Token"),
                     Field("right", "Expr"),
@@ -60,6 +66,17 @@ fun main(args: Array<String>) {
             Ast(
                     "Expression",
                     Field("expression", "Expr"),
+            ),
+            Ast(
+                    "If",
+                    Field("condition", "Expr"),
+                    Field("thenBranch", "Stmt"),
+                    Field("elseBranch", "Stmt?"),
+            ),
+            Ast(
+                    "While",
+                    Field("condition", "Expr"),
+                    Field("body", "Stmt"),
             ),
             Ast(
                     "Block",

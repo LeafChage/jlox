@@ -4,6 +4,8 @@ abstract class Stmt {
     abstract fun <R> accept(v: Visitor<R>): R
     interface Visitor<R> {
         fun visitExpressionStmt(stmt: Expression): R
+        fun visitIfStmt(stmt: If): R
+        fun visitWhileStmt(stmt: While): R
         fun visitBlockStmt(stmt: Block): R
         fun visitPrintStmt(stmt: Print): R
         fun visitVarStmt(stmt: Var): R
@@ -11,6 +13,18 @@ abstract class Stmt {
     class Expression(val expression: Expr) : Stmt() {
         override fun <R> accept(v: Visitor<R>): R {
             return v.visitExpressionStmt(this)
+        }
+    }
+
+    class If(val condition: Expr, val thenBranch: Stmt, val elseBranch: Stmt?) : Stmt() {
+        override fun <R> accept(v: Visitor<R>): R {
+            return v.visitIfStmt(this)
+        }
+    }
+
+    class While(val condition: Expr, val body: Stmt) : Stmt() {
+        override fun <R> accept(v: Visitor<R>): R {
+            return v.visitWhileStmt(this)
         }
     }
 
