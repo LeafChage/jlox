@@ -1,7 +1,26 @@
 package leafchage.lox
 
 public class Interpriter : Expr.Visitor<Any?>, Stmt.Visitor<Unit> {
-    private var environment = Environment()
+    public var globals = Environment()
+        private set
+    private var environment = globals
+
+    public constructor() {
+        globals.define(
+                "clock",
+                object : LoxCallable {
+                    public override fun arity() = 0
+
+                    public override fun call(
+                            interpriter: Interpriter,
+                            arguments: List<Any?>
+                    ): Any? = System.currentTimeMillis()
+
+                    public override fun toString() = "<native fn>"
+                }
+        )
+    }
+
     public fun interpret(statements: List<Stmt>) {
         try {
             for (stmt in statements) {
@@ -30,6 +49,11 @@ public class Interpriter : Expr.Visitor<Any?>, Stmt.Visitor<Unit> {
                 execute(stmt.elseBranch)
             }
         }
+    }
+
+    public override fun visitFunctionStmt(stmt: Stmt.Function): Unit {
+        val fn = LoxFunction(stmt)
+        environment.define(stmt.name.lexeme, fn)
     }
 
     public override fun visitBlockStmt(stmt: Stmt.Block): Unit {
@@ -93,6 +117,25 @@ public class Interpriter : Expr.Visitor<Any?>, Stmt.Visitor<Unit> {
                 throw UnreachableException()
             }
         }
+    }
+
+    public override fun visitCallExpr(expr: Expr.Call): Any? {
+        val callee = evaluate(expr.callee)
+        val arguments = expr.arguments.map({ arg -> evaluate(arg) })
+        if (callee !is LoxCallable) {
+            throw RuntimeError(expr.paren, "Can only call functions and classes.")
+        }
+        if (arguments.size != callee.arity()) {
+            throw RuntimeError(
+                    expr.paren,
+                    String.format(
+                            "Expected %d arguments but got %d.",
+                            callee.arity(),
+                            arguments.size
+                    )
+            )
+        }
+        return callee.call(this, arguments)
     }
 
     public override fun visitGroupingExpr(expr: Expr.Grouping): Any? {
@@ -168,7 +211,7 @@ public class Interpriter : Expr.Visitor<Any?>, Stmt.Visitor<Unit> {
         }
     }
 
-    private fun executeBlock(block: Stmt.Block, innerEnv: Environment): Unit {
+    public fun executeBlock(block: Stmt.Block, innerEnv: Environment): Unit {
         val outerEnv = environment
         try {
             this.environment = innerEnv

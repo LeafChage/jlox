@@ -36,6 +36,12 @@ fun main(args: Array<String>) {
                     Field("right", "Expr"),
             ),
             Ast(
+                    "Call",
+                    Field("callee", "Expr"),
+                    Field("paren", "Token"),
+                    Field("arguments", "List<Expr>"),
+            ),
+            Ast(
                     "Grouping",
                     Field("expression", "Expr"),
             ),
@@ -66,6 +72,12 @@ fun main(args: Array<String>) {
             Ast(
                     "Expression",
                     Field("expression", "Expr"),
+            ),
+            Ast(
+                    "Function",
+                    Field("name", "Token"),
+                    Field("params", "List<Token>"),
+                    Field("body", "Stmt.Block"),
             ),
             Ast(
                     "If",

@@ -3,7 +3,10 @@
 ## BNF
 ```
 program     -> statement* EOF;
-declaration -> varDecl | statement;
+declaration -> varDecl | funDecl | statement;
+funDecl     -> "fun" function ;
+function    -> IDETIFIER "(" parameters? ")" block;
+parameters  -> IDETIFIER ( ","  IDETIFIER )* ;
 varDecl     -> "var" IDETIFIER ( "=" expression )? ";";
 statement   -> exprStmt | ifStmt | whileStmt | forStmt | printStmt | block;
 whileStmt   -> "while" "(" expression ")" statement;
@@ -20,7 +23,9 @@ equality    -> comparison ( ( "!=" | "==" ) comparison )*;
 comparison  -> term ( ( ">" | ">=" | "<" | "<=" ) term )*;
 term        -> factor ( ( "-" | "+" ) factor )*;
 factor      -> unary ( ( "/" | "*" ) unary )*;
-unary       -> ( "!" | "-" ) unary | primary;
+unary       -> ( "!" | "-" ) unary | call;
+call        -> primary ( "(" arguments? ")" )*;
+arguments   -> expression ( "," expression )*;
 primary     -> NUMBER | STRING | "true" | "false" | "nil" | "(" expression ")" | IDETIFIER;
 ```
 

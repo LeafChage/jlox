@@ -3,6 +3,7 @@ package leafchage.lox
 import kotlin.collections.mutableListOf
 
 public class Parser(val tokens: List<Token>) {
+    private val MAX_ARGUMENTS_SIZE = 255
     class ParserError : RuntimeException() {}
 
     var current = 0
@@ -20,7 +21,8 @@ public class Parser(val tokens: List<Token>) {
 
     private fun declaration(): Stmt? {
         try {
-            return if (match(TokenType.VAR)) varDeclaration() else statement()
+            return if (match(TokenType.VAR)) varDeclaration()
+            else if (match(TokenType.FUN)) function("function") else statement()
         } catch (err: ParserError) {
             synchronize()
             return null
@@ -32,6 +34,25 @@ public class Parser(val tokens: List<Token>) {
         val init = if (match(TokenType.EQUAL)) expression() else null
         consume(TokenType.SEMICOLON, "Expect ';' after variable declaration.")
         return Stmt.Var(name, init)
+    }
+
+    private fun function(kind: String): Stmt.Function {
+        val name = consume(TokenType.INDETIFIER, String.format("Expect %s name.", kind))
+        consume(TokenType.LEFT_PAREN, String.format("Expect '(' after %s name.", kind))
+        var parameters = mutableListOf<Token>()
+        if (!check(TokenType.RIGHT_PAREN)) {
+            parameters.add(consume(TokenType.INDETIFIER, "Expect parameter name."))
+            while (match(TokenType.COMMA)) {
+                if (parameters.size >= MAX_ARGUMENTS_SIZE) {
+                    error(peek(), "Can't have more than 255 parameters.")
+                }
+                parameters.add(consume(TokenType.INDETIFIER, "Expect parameter name."))
+            }
+        }
+        consume(TokenType.RIGHT_PAREN, "Expect ')' after parameters.")
+        consume(TokenType.LEFT_BRACE, String.format("Expect '{' before %s body.", kind))
+        val body = block()
+        return Stmt.Function(name, parameters, body)
     }
 
     private fun statement(): Stmt =
@@ -96,7 +117,7 @@ public class Parser(val tokens: List<Token>) {
         return body
     }
 
-    fun block(): Stmt {
+    fun block(): Stmt.Block {
         var statements = mutableListOf<Stmt>()
         while (!check(TokenType.RIGHT_BRACE) && !isAtEnd()) {
             val d = declaration()
@@ -213,7 +234,31 @@ public class Parser(val tokens: List<Token>) {
             val right = unary()
             return Expr.Unary(operator, right)
         }
-        return primary()
+        return call()
+    }
+
+    private fun call(): Expr {
+        var expr = primary()
+        while (match(TokenType.LEFT_PAREN)) {
+            expr = finishCall(expr)
+        }
+        return expr
+    }
+
+    private fun finishCall(calee: Expr): Expr {
+        var arguments = mutableListOf<Expr>()
+        if (!check(TokenType.RIGHT_PAREN)) {
+            arguments.add(expression())
+            while (match(TokenType.COMMA)) {
+                if (arguments.size >= MAX_ARGUMENTS_SIZE) {
+                    error(peek(), "Can't have more than 255 arguments.")
+                }
+                arguments.add(expression())
+            }
+        }
+
+        val paren = consume(TokenType.RIGHT_PAREN, "Expect ')' after arguments.")
+        return Expr.Call(calee, paren, arguments)
     }
 
     private fun primary(): Expr {
