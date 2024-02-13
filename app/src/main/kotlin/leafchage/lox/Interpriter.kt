@@ -1,24 +1,14 @@
 package leafchage.lox
 
+import leafchage.lox.native.*
+
 public class Interpriter : Expr.Visitor<Any?>, Stmt.Visitor<Unit> {
     public var globals = Environment()
         private set
     private var environment = globals
 
     public constructor() {
-        globals.define(
-                "clock",
-                object : LoxCallable {
-                    public override fun arity() = 0
-
-                    public override fun call(
-                            interpriter: Interpriter,
-                            arguments: List<Any?>
-                    ): Any? = System.currentTimeMillis()
-
-                    public override fun toString() = "<native fn>"
-                }
-        )
+        globals.define("clock", Clock())
     }
 
     public fun interpret(statements: List<Stmt>) {
@@ -49,6 +39,11 @@ public class Interpriter : Expr.Visitor<Any?>, Stmt.Visitor<Unit> {
                 execute(stmt.elseBranch)
             }
         }
+    }
+
+    public override fun visitReturnStmt(stmt: Stmt.Return): Unit {
+        val value = if (stmt.value != null) evaluate(stmt.value) else null
+        throw Return(value)
     }
 
     public override fun visitFunctionStmt(stmt: Stmt.Function): Unit {

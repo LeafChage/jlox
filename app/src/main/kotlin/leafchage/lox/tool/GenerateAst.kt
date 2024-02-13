@@ -99,6 +99,11 @@ fun main(args: Array<String>) {
                     Field("expression", "Expr"),
             ),
             Ast(
+                    "Return",
+                    Field("keyword", "Token"),
+                    Field("value", "Expr?"),
+            ),
+            Ast(
                     "Var",
                     Field("name", "Token"),
                     Field("initializer", "Expr?"),

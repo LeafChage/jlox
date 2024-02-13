@@ -1,5 +1,6 @@
 package leafchage.lox
 
+import kotlin.check
 import kotlin.collections.mutableListOf
 
 public class Parser(val tokens: List<Token>) {
@@ -58,6 +59,7 @@ public class Parser(val tokens: List<Token>) {
     private fun statement(): Stmt =
             if (match(TokenType.PRINT)) printStatement()
             else if (match(TokenType.IF)) ifStatement()
+            else if (match(TokenType.RETURN)) returnStatement()
             else if (match(TokenType.WHILE)) whileStatement()
             else if (match(TokenType.FOR)) forStatement()
             else if (match(TokenType.LEFT_BRACE)) block() else expressionStatement()
@@ -70,6 +72,13 @@ public class Parser(val tokens: List<Token>) {
         val thenStatement = statement()
         val elseStatement = if (match(TokenType.ELSE)) statement() else null
         return Stmt.If(condition, thenStatement, elseStatement)
+    }
+
+    private fun returnStatement(): Stmt {
+        val keyword = previous()
+        val value = if (check(TokenType.SEMICOLON)) null else expression()
+        consume(TokenType.SEMICOLON, "Expect ';' after return value.")
+        return Stmt.Return(keyword, value)
     }
 
     private fun whileStatement(): Stmt {

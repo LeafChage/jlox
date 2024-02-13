@@ -9,6 +9,7 @@ abstract class Stmt {
         fun visitWhileStmt(stmt: While): R
         fun visitBlockStmt(stmt: Block): R
         fun visitPrintStmt(stmt: Print): R
+        fun visitReturnStmt(stmt: Return): R
         fun visitVarStmt(stmt: Var): R
     }
     class Expression(val expression: Expr) : Stmt() {
@@ -44,6 +45,12 @@ abstract class Stmt {
     class Print(val expression: Expr) : Stmt() {
         override fun <R> accept(v: Visitor<R>): R {
             return v.visitPrintStmt(this)
+        }
+    }
+
+    class Return(val keyword: Token, val value: Expr?) : Stmt() {
+        override fun <R> accept(v: Visitor<R>): R {
+            return v.visitReturnStmt(this)
         }
     }
 
