@@ -58,7 +58,6 @@ public class Scanner(val source: String) {
                         advance()
                     }
                 }
-                addToken(if (match('=')) TokenType.GREATER_EQUAL else TokenType.GREATER)
             }
             ' ', '\r', '\t' -> {
                 // ignore white space

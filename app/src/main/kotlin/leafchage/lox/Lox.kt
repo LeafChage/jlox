@@ -30,7 +30,7 @@ public class Lox {
         }
 
         public fun runtimeError(err: RuntimeError) {
-            System.err.println(String.format("%s\n[line %d ]", err.message, err.token.line))
+            System.err.println(String.format("[line %d] Error: %s", err.token.line, err.message))
             hadRuntimeError = true
         }
 
@@ -39,7 +39,7 @@ public class Lox {
         }
 
         public fun report(line: Int, where: String, msg: String) {
-            System.err.println(String.format("[line %d ] Error%s: %s", line, where, msg))
+            System.err.println(String.format("[line %d] Error%s: %s", line, where, msg))
             hadError = true
         }
     }
@@ -74,8 +74,17 @@ public class Lox {
         val parser = Parser(tokens)
         val statements = parser.parse()
         if (hadError) {
+            // parse error
             return
         }
+
+        val resolver = Resolver(interpreter)
+        resolver.resolve(statements)
+        if (hadError) {
+            // resolve error
+            return
+        }
+
         interpreter.interpret(statements)
     }
 }

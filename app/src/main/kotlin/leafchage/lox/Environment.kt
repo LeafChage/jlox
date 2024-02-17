@@ -33,6 +33,20 @@ public class Environment(
         throw RuntimeError(name, String.format("Undefined variable '%s'", name.lexeme))
     }
 
+    // Distanceの分だけ広げた範囲のScopeを取得してその環境から探す
+    public fun getAt(distance: Int, name: Token): Any? {
+        return ancestor(distance).values.get(name.lexeme)
+    }
+
+    private fun ancestor(distance: Int): Environment {
+        var env = this
+        for (i in 0..distance) {
+            // distanceの分だけScopeを広げていく
+            env = env.enclosing!!
+        }
+        return env
+    }
+
     public fun assign(name: Token, value: Any?) {
         if (values.containsKey(name.lexeme)) {
             values.put(name.lexeme, EValue(value, true))
@@ -43,5 +57,9 @@ public class Environment(
         }
 
         throw RuntimeError(name, String.format("Undefined variable '%s'", name.lexeme))
+    }
+
+    public fun assignAt(distance: Int, name: Token, value: Any?) {
+        ancestor(distance).values.put(name.lexeme, EValue(value, true))
     }
 }

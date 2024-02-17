@@ -5,6 +5,7 @@ import kotlin.collections.mutableListOf
 
 public class Parser(val tokens: List<Token>) {
     private val MAX_ARGUMENTS_SIZE = 255
+
     class ParserError : RuntimeException() {}
 
     var current = 0

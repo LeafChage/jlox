@@ -3,6 +3,8 @@ package leafchage.lox
 import leafchage.lox.native.*
 
 public class Interpriter : Expr.Visitor<Any?>, Stmt.Visitor<Unit> {
+    private val locals = hashMapOf<Expr, Int>()
+
     public var globals = Environment()
         private set
     private var environment = globals
@@ -171,11 +173,18 @@ public class Interpriter : Expr.Visitor<Any?>, Stmt.Visitor<Unit> {
         }
     }
 
-    public override fun visitVariableExpr(expr: Expr.Variable): Any? = environment.get(expr.name)
+    public override fun visitVariableExpr(expr: Expr.Variable): Any? =
+            lookUpVariable(expr.name, expr)
 
     public override fun visitAssignExpr(expr: Expr.Assign): Any? {
         val value = evaluate(expr.value)
-        environment.assign(expr.name, value)
+
+        val distance = locals.get(expr)
+        if (distance != null) {
+            environment.assignAt(distance, expr.name, value)
+        } else {
+            globals.assign(expr.name, value)
+        }
         return value
     }
 
@@ -231,5 +240,12 @@ public class Interpriter : Expr.Visitor<Any?>, Stmt.Visitor<Unit> {
             return if (text.endsWith(".0")) text.substring(0, text.length - 2) else text
         }
         return obj.toString()
+    }
+
+    public fun resolve(expr: Expr, depth: Int) = locals.put(expr, depth)
+
+    private fun lookUpVariable(name: Token, expr: Expr): Any? {
+        val distance = locals.get(expr)
+        return if (distance != null) environment.getAt(distance, name) else globals.get(name)
     }
 }
