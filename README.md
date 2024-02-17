@@ -1,5 +1,8 @@
 # Lox
 
+## Reference
+[インタプリタの作り方 －言語設計／開発の基本と2つの方式による実装](https://book.impress.co.jp/books/1122101087)
+
 ## BNF
 ```
 program     -> statement* EOF;
