@@ -7,7 +7,7 @@
 ```
 program     -> statement* EOF;
 declaration -> classDecl | varDecl | funDecl | statement;
-classDecl   -> "class" IDETIFIER  "{" function* "}";
+classDecl   -> "class" IDETIFIER  ( "<" IDETIFIER )? "{" function* "}";
 funDecl     -> "fun" function ;
 function    -> IDETIFIER "(" parameters? ")" block;
 parameters  -> IDETIFIER ( ","  IDETIFIER )* ;
@@ -31,7 +31,7 @@ factor      -> unary ( ( "/" | "*" ) unary )*;
 unary       -> ( "!" | "-" ) unary | call;
 call        -> primary ( "(" arguments? ")" | "." IDETIFIER )*;
 arguments   -> expression ( "," expression )*;
-primary     -> NUMBER | STRING | "true" | "false" | "nil" | "(" expression ")" | IDETIFIER;
+primary     -> NUMBER | STRING | "true" | "false" | "nil" | "(" expression ")" | IDETIFIER | "super" "." IDETIFIER ;
 ```
 
 

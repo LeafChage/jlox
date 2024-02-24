@@ -1,6 +1,10 @@
 package leafchage.lox
 
-public class LoxClass(val name: String, var methods: Map<String, LoxFunction>) : LoxCallable {
+public class LoxClass(
+        val name: String,
+        val superClass: LoxClass?,
+        var methods: Map<String, LoxFunction>
+) : LoxCallable {
     public override fun arity(): Int = findMethod("init")?.arity() ?: 0
 
     public override fun call(interpriter: Interpriter, arguments: List<Any?>): LoxInstance {
@@ -16,5 +20,13 @@ public class LoxClass(val name: String, var methods: Map<String, LoxFunction>) :
 
     public override fun toString(): String = name
 
-    public fun findMethod(name: String) = methods.get(name)
+    public fun findMethod(name: String): LoxFunction? {
+        val method = methods.get(name)
+
+        if (method != null) {
+            return method
+        }
+
+        return superClass?.findMethod(name)
+    }
 }
