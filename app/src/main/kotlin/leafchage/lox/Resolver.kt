@@ -23,6 +23,7 @@ private enum class FunctionType {
 private enum class ClassType {
     None,
     Class,
+    SubClass,
 }
 
 // 構文木を作成した後にインタプリタ実行の前に木を巡回して、
@@ -34,24 +35,35 @@ public class Resolver(val interpriter: Interpriter) : Expr.Visitor<Unit>, Stmt.V
 
     public override fun visitClassStmt(stmt: Stmt.Class): Unit {
         val enclosingClass = this.currentClass
-        currentClass = ClassType.Class
+        this.currentClass = ClassType.Class
 
         declare(stmt.name)
+        if (stmt.superClass != null) {
+            this.currentClass = ClassType.SubClass
+            resolve(stmt.superClass)
+        }
         define(stmt.name)
+        if (stmt.superClass != null) {
+            if (stmt.name.lexeme.equals(stmt.superClass.name.lexeme)) {
+                Lox.error(stmt.superClass.name, "A class can't inherit from itself.")
+            }
+            beginScope()
+            scopes.peek().put("super", Variable(null, VariableType.Refered))
+        }
 
         beginScope()
         scopes.peek().put("this", Variable(null, VariableType.Refered))
         for (method in stmt.methods) {
-            val delaration =
-                    if (method.name.lexeme.equals("init")) {
-                        FunctionType.Initializer
-                    } else {
-                        FunctionType.Method
-                    }
-
-            resolveFunction(method, delaration)
+            resolveFunction(
+                    method,
+                    if (method.name.lexeme.equals("init")) FunctionType.Initializer
+                    else FunctionType.Method
+            )
         }
         endScope()
+        if (stmt.superClass != null) {
+            endScope()
+        }
 
         this.currentClass = enclosingClass
     }
@@ -139,6 +151,14 @@ public class Resolver(val interpriter: Interpriter) : Expr.Visitor<Unit>, Stmt.V
     public override fun visitThisExpr(expr: Expr.This): Unit {
         if (currentClass == ClassType.None) {
             Lox.error(expr.keyword, "Can't use 'this' outside of a class")
+        }
+        resolveLocal(expr, expr.keyword)
+    }
+    public override fun visitSuperExpr(expr: Expr.Super): Unit {
+        if (currentClass == ClassType.None) {
+            Lox.error(expr.keyword, "Can't use 'super' outside of a class.")
+        } else if (currentClass != ClassType.SubClass) {
+            Lox.error(expr.keyword, "Can't use 'super' in a class with no superclass.")
         }
         resolveLocal(expr, expr.keyword)
     }

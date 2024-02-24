@@ -29,7 +29,22 @@ public class Interpriter : Expr.Visitor<Any?>, Stmt.Visitor<Unit> {
     }
 
     public override fun visitClassStmt(stmt: Stmt.Class): Unit {
+        var superClass: LoxClass? = null
+        if (stmt.superClass != null) {
+            val sclass = evaluate(stmt.superClass)
+            if (sclass is LoxClass) {
+                superClass = sclass
+            } else {
+                throw RuntimeError(stmt.superClass.name, "Superclass must be a class.")
+            }
+        }
+
         environment.define(stmt.name.lexeme, null)
+
+        if (stmt.superClass != null) {
+            this.environment = Environment(environment)
+            environment.define("super", stmt.superClass)
+        }
 
         var methods = mutableMapOf<String, LoxFunction>()
         for (method in stmt.methods) {
@@ -39,8 +54,12 @@ public class Interpriter : Expr.Visitor<Any?>, Stmt.Visitor<Unit> {
             )
         }
 
-        val klass = LoxClass(stmt.name.lexeme, methods)
+        val klass = LoxClass(stmt.name.lexeme, superClass, methods)
+        if (superClass != null) {
+            environment = environment.enclosing !!
+        }
         environment.assign(stmt.name, klass)
+        environment.debug()
     }
 
     public override fun visitWhileStmt(stmt: Stmt.While): Unit {
@@ -212,6 +231,29 @@ public class Interpriter : Expr.Visitor<Any?>, Stmt.Visitor<Unit> {
             lookUpVariable(expr.name, expr)
 
     public override fun visitThisExpr(expr: Expr.This) = lookUpVariable(expr.keyword, expr)
+
+    public override fun visitSuperExpr(expr: Expr.Super): Any? {
+        val distance = locals.get(expr)!!
+        val superClass = environment.getAt(distance, "super")
+
+        val method =
+                if (superClass != null && superClass is LoxClass) {
+                    superClass.findMethod(expr.method.lexeme)
+                } else {
+                    null
+                }
+
+        if (method == null) {
+            throw RuntimeError(
+                    expr.method,
+                    String.format("Undefined property '%s'.", expr.method.lexeme)
+            )
+        }
+
+        // 強制的に一つScopeを広げることで親のthisにアクセスする
+        val parent = environment.getAt(distance - 1, "this") as LoxInstance
+        return method.bind(parent)
+    }
 
     public override fun visitAssignExpr(expr: Expr.Assign): Any? {
         val value = evaluate(expr.value)

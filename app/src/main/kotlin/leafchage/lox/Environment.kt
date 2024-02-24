@@ -35,7 +35,7 @@ public class Environment(
 
     // Distanceの分だけ広げた範囲のScopeを取得してその環境から探す
     public fun getAt(distance: Int, name: Token) = getAt(distance, name.lexeme)
-    public fun getAt(distance: Int, name: String) = ancestor(distance).values.get(name)
+    public fun getAt(distance: Int, name: String) = ancestor(distance).values.get(name)?.value
 
     private fun ancestor(distance: Int): Environment {
         var env = this

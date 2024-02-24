@@ -14,7 +14,6 @@ public class LoxFunction(
             env.define(declaration.params.get(i).lexeme, arguments.get(i))
         }
 
-        env.debug()
         try {
             interpriter.executeBlock(declaration.body, env)
         } catch (returnValue: Return) {
