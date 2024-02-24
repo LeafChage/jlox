@@ -1,5 +1,6 @@
 package leafchage.lox
 
+import kotlin.collections.mutableMapOf
 import leafchage.lox.native.*
 
 public class Interpriter : Expr.Visitor<Any?>, Stmt.Visitor<Unit> {
@@ -27,6 +28,21 @@ public class Interpriter : Expr.Visitor<Any?>, Stmt.Visitor<Unit> {
         stmt.accept(this)
     }
 
+    public override fun visitClassStmt(stmt: Stmt.Class): Unit {
+        environment.define(stmt.name.lexeme, null)
+
+        var methods = mutableMapOf<String, LoxFunction>()
+        for (method in stmt.methods) {
+            methods.put(
+                    method.name.lexeme,
+                    LoxFunction(method, environment, method.name.lexeme.equals("init"))
+            )
+        }
+
+        val klass = LoxClass(stmt.name.lexeme, methods)
+        environment.assign(stmt.name, klass)
+    }
+
     public override fun visitWhileStmt(stmt: Stmt.While): Unit {
         while (isTruthy(evaluate(stmt.condition))) {
             execute(stmt.body)
@@ -49,7 +65,7 @@ public class Interpriter : Expr.Visitor<Any?>, Stmt.Visitor<Unit> {
     }
 
     public override fun visitFunctionStmt(stmt: Stmt.Function): Unit {
-        val fn = LoxFunction(stmt, environment)
+        val fn = LoxFunction(stmt, environment, false)
         environment.define(stmt.name.lexeme, fn)
     }
 
@@ -72,6 +88,14 @@ public class Interpriter : Expr.Visitor<Any?>, Stmt.Visitor<Unit> {
         } else {
             environment.define(stmt.name.lexeme, evaluate(stmt.initializer))
         }
+    }
+
+    public override fun visitGetExpr(expr: Expr.Get): Any? {
+        val obj = evaluate(expr.obj)
+        if (obj is LoxInstance) {
+            return obj.get(expr.name)
+        }
+        throw RuntimeError(expr.name, "Only instances have properties.")
     }
 
     public override fun visitBinaryExpr(expr: Expr.Binary): Any? {
@@ -164,6 +188,17 @@ public class Interpriter : Expr.Visitor<Any?>, Stmt.Visitor<Unit> {
         }
     }
 
+    public override fun visitSetExpr(expr: Expr.Set): Any? {
+        val obj = evaluate(expr.obj)
+        if (obj !is LoxInstance) {
+            throw RuntimeError(expr.name, "Only instances have fields")
+        }
+
+        val value = evaluate(expr.value)
+        obj.set(expr.name, value)
+        return value
+    }
+
     public override fun visitUnaryExpr(expr: Expr.Unary): Any? {
         val right = evaluate(expr.right)
         return when (expr.operator.type) {
@@ -175,6 +210,8 @@ public class Interpriter : Expr.Visitor<Any?>, Stmt.Visitor<Unit> {
 
     public override fun visitVariableExpr(expr: Expr.Variable): Any? =
             lookUpVariable(expr.name, expr)
+
+    public override fun visitThisExpr(expr: Expr.This) = lookUpVariable(expr.keyword, expr)
 
     public override fun visitAssignExpr(expr: Expr.Assign): Any? {
         val value = evaluate(expr.value)
@@ -216,7 +253,7 @@ public class Interpriter : Expr.Visitor<Any?>, Stmt.Visitor<Unit> {
     }
 
     public fun executeBlock(block: Stmt.Block, innerEnv: Environment): Unit {
-        val outerEnv = environment
+        val outerEnv = this.environment
         try {
             this.environment = innerEnv
             for (stmt in block.statements) {

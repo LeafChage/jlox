@@ -24,6 +24,7 @@ public class Parser(val tokens: List<Token>) {
     private fun declaration(): Stmt? {
         try {
             return if (match(TokenType.VAR)) varDeclaration()
+            else if (match(TokenType.CLASS)) classDeclaration()
             else if (match(TokenType.FUN)) function("function") else statement()
         } catch (err: ParserError) {
             synchronize()
@@ -36,6 +37,19 @@ public class Parser(val tokens: List<Token>) {
         val init = if (match(TokenType.EQUAL)) expression() else null
         consume(TokenType.SEMICOLON, "Expect ';' after variable declaration.")
         return Stmt.Var(name, init)
+    }
+
+    private fun classDeclaration(): Stmt.Class {
+        val name = consume(TokenType.INDETIFIER, "Expect class name.")
+        consume(TokenType.LEFT_BRACE, "Expect: '{' before class body")
+
+        var methods = mutableListOf<Stmt.Function>()
+        while (!check(TokenType.RIGHT_BRACE) && !isAtEnd()) {
+            methods.add(function("method"))
+        }
+
+        consume(TokenType.RIGHT_BRACE, "Expect: '}' after class body")
+        return Stmt.Class(name, methods)
     }
 
     private fun function(kind: String): Stmt.Function {
@@ -163,6 +177,8 @@ public class Parser(val tokens: List<Token>) {
             if (expr is Expr.Variable) {
                 val name = expr.name
                 return Expr.Assign(name, value)
+            } else if (expr is Expr.Get) {
+                return Expr.Set(expr.obj, expr.name, value)
             }
             error(equal, "Invalid assignment target.")
         }
@@ -249,8 +265,15 @@ public class Parser(val tokens: List<Token>) {
 
     private fun call(): Expr {
         var expr = primary()
-        while (match(TokenType.LEFT_PAREN)) {
-            expr = finishCall(expr)
+        while (true) {
+            if (match(TokenType.LEFT_PAREN)) {
+                expr = finishCall(expr)
+            } else if (match(TokenType.DOT)) {
+                val name = consume(TokenType.INDETIFIER, "Expect property name after '.'.")
+                expr = Expr.Get(expr, name)
+            } else {
+                break
+            }
         }
         return expr
     }
@@ -291,6 +314,9 @@ public class Parser(val tokens: List<Token>) {
         }
         if (match(TokenType.INDETIFIER)) {
             return Expr.Variable(previous())
+        }
+        if (match(TokenType.THIS)) {
+            return Expr.This(previous())
         }
         throw error(peek(), "Expect expression.")
     }

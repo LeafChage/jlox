@@ -11,6 +11,7 @@ abstract class Stmt {
         fun visitPrintStmt(stmt: Print): R
         fun visitReturnStmt(stmt: Return): R
         fun visitVarStmt(stmt: Var): R
+        fun visitClassStmt(stmt: Class): R
     }
     class Expression(val expression: Expr) : Stmt() {
         override fun <R> accept(v: Visitor<R>): R {
@@ -57,6 +58,13 @@ abstract class Stmt {
     class Var(val name: Token, val initializer: Expr?) : Stmt() {
         override fun <R> accept(v: Visitor<R>): R {
             return v.visitVarStmt(this)
+        }
+    }
+
+    class Class(val name: Token, val superClass: Expr.Variable?, val methods: List<Stmt.Function>) :
+            Stmt() {
+        override fun <R> accept(v: Visitor<R>): R {
+            return v.visitClassStmt(this)
         }
     }
 }

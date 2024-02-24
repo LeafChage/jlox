@@ -6,7 +6,8 @@
 ## BNF
 ```
 program     -> statement* EOF;
-declaration -> varDecl | funDecl | statement;
+declaration -> classDecl | varDecl | funDecl | statement;
+classDecl   -> "class" IDETIFIER  "{" function* "}";
 funDecl     -> "fun" function ;
 function    -> IDETIFIER "(" parameters? ")" block;
 parameters  -> IDETIFIER ( ","  IDETIFIER )* ;
@@ -20,7 +21,7 @@ printStmt   -> "print" expression ";";
 returnStmt  -> "return" expression ";" ;
 block       -> "{" declaration "}";
 expression  -> assignment;
-assignment  -> IDETIFIER "=" assignment | logic_or;
+assignment  -> ( call "." )? IDETIFIER "=" assignment | logic_or;
 logic_or    -> logic_and ( "or" logic_and )*;
 logic_and   -> equality ( "and" equality )*;
 equality    -> comparison ( ( "!=" | "==" ) comparison )*;
@@ -28,7 +29,7 @@ comparison  -> term ( ( ">" | ">=" | "<" | "<=" ) term )*;
 term        -> factor ( ( "-" | "+" ) factor )*;
 factor      -> unary ( ( "/" | "*" ) unary )*;
 unary       -> ( "!" | "-" ) unary | call;
-call        -> primary ( "(" arguments? ")" )*;
+call        -> primary ( "(" arguments? ")" | "." IDETIFIER )*;
 arguments   -> expression ( "," expression )*;
 primary     -> NUMBER | STRING | "true" | "false" | "nil" | "(" expression ")" | IDETIFIER;
 ```

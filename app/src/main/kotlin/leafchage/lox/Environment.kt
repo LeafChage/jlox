@@ -34,13 +34,12 @@ public class Environment(
     }
 
     // Distanceの分だけ広げた範囲のScopeを取得してその環境から探す
-    public fun getAt(distance: Int, name: Token): Any? {
-        return ancestor(distance).values.get(name.lexeme)
-    }
+    public fun getAt(distance: Int, name: Token) = getAt(distance, name.lexeme)
+    public fun getAt(distance: Int, name: String) = ancestor(distance).values.get(name)
 
     private fun ancestor(distance: Int): Environment {
         var env = this
-        for (i in 0..distance) {
+        for (i in 0 ..< distance) {
             // distanceの分だけScopeを広げていく
             env = env.enclosing!!
         }
@@ -61,5 +60,15 @@ public class Environment(
 
     public fun assignAt(distance: Int, name: Token, value: Any?) {
         ancestor(distance).values.put(name.lexeme, EValue(value, true))
+    }
+
+    public fun debug(level: Int = 0) {
+        for (i in 0 ..< level) {
+            print("\t")
+        }
+        println(values)
+        if (enclosing != null) {
+            enclosing.debug(level + 1)
+        }
     }
 }

@@ -11,26 +11,57 @@ private enum class VariableType {
     Refered,
 }
 
-private data class Variable(val token: Token, val type: VariableType) {}
+private data class Variable(val token: Token?, val type: VariableType) {}
 
 private enum class FunctionType {
-    NONE,
-    FUNCTION,
+    None,
+    Function,
+    Method,
+    Initializer,
+}
+
+private enum class ClassType {
+    None,
+    Class,
 }
 
 // 構文木を作成した後にインタプリタ実行の前に木を巡回して、
 // 全ての変数の参照先を解決する
 public class Resolver(val interpriter: Interpriter) : Expr.Visitor<Unit>, Stmt.Visitor<Unit> {
     private var scopes: Stack<MutableMap<String, Variable>> = Stack()
-    private var currentFunction = FunctionType.NONE
+    private var currentFunction = FunctionType.None
+    private var currentClass = ClassType.None
 
+    public override fun visitClassStmt(stmt: Stmt.Class): Unit {
+        val enclosingClass = this.currentClass
+        currentClass = ClassType.Class
+
+        declare(stmt.name)
+        define(stmt.name)
+
+        beginScope()
+        scopes.peek().put("this", Variable(null, VariableType.Refered))
+        for (method in stmt.methods) {
+            val delaration =
+                    if (method.name.lexeme.equals("init")) {
+                        FunctionType.Initializer
+                    } else {
+                        FunctionType.Method
+                    }
+
+            resolveFunction(method, delaration)
+        }
+        endScope()
+
+        this.currentClass = enclosingClass
+    }
     public override fun visitExpressionStmt(stmt: Stmt.Expression): Unit {
         resolve(stmt.expression)
     }
     public override fun visitFunctionStmt(stmt: Stmt.Function): Unit {
         declare(stmt.name)
         define(stmt.name)
-        resolveFunction(stmt, FunctionType.FUNCTION)
+        resolveFunction(stmt, FunctionType.Function)
     }
     public override fun visitIfStmt(stmt: Stmt.If): Unit {
         resolve(stmt.condition)
@@ -52,11 +83,14 @@ public class Resolver(val interpriter: Interpriter) : Expr.Visitor<Unit>, Stmt.V
         resolve(stmt.expression)
     }
     public override fun visitReturnStmt(stmt: Stmt.Return): Unit {
-        if (currentFunction == FunctionType.NONE) {
+        if (currentFunction == FunctionType.None) {
             Lox.error(stmt.keyword, "Can't return from top-level code.")
         }
 
         if (stmt.value != null) {
+            if (currentFunction == FunctionType.Initializer) {
+                Lox.error(stmt.keyword, "Can't return a value from an initializer.")
+            }
             resolve(stmt.value)
         }
     }
@@ -70,6 +104,9 @@ public class Resolver(val interpriter: Interpriter) : Expr.Visitor<Unit>, Stmt.V
     public override fun visitAssignExpr(expr: Expr.Assign): Unit {
         resolve(expr.value)
         resolveLocal(expr, expr.name)
+    }
+    public override fun visitGetExpr(expr: Expr.Get): Unit {
+        resolve(expr.obj)
     }
     public override fun visitBinaryExpr(expr: Expr.Binary): Unit {
         resolve(expr.left)
@@ -91,8 +128,19 @@ public class Resolver(val interpriter: Interpriter) : Expr.Visitor<Unit>, Stmt.V
         resolve(expr.left)
         resolve(expr.right)
     }
+
+    public override fun visitSetExpr(expr: Expr.Set): Unit {
+        resolve(expr.value)
+        resolve(expr.obj)
+    }
     public override fun visitUnaryExpr(expr: Expr.Unary): Unit {
         resolve(expr.right)
+    }
+    public override fun visitThisExpr(expr: Expr.This): Unit {
+        if (currentClass == ClassType.None) {
+            Lox.error(expr.keyword, "Can't use 'this' outside of a class")
+        }
+        resolveLocal(expr, expr.keyword)
     }
     public override fun visitVariableExpr(expr: Expr.Variable): Unit {
         if (!scopes.isEmpty() && scopes.peek().get(expr.name.lexeme)?.type == VariableType.Defined
@@ -108,8 +156,8 @@ public class Resolver(val interpriter: Interpriter) : Expr.Visitor<Unit>, Stmt.V
 
     private fun endScope() {
         val scope = scopes.pop()
-        for ((key, value) in scope) {
-            if (value.type != VariableType.Refered) {
+        for ((_, value) in scope) {
+            if (value.type != VariableType.Refered && value.token != null) {
                 Lox.error(value.token, "must't declare unrefered variable.")
             }
         }

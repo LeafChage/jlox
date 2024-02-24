@@ -6,9 +6,13 @@ abstract class Expr {
         fun visitAssignExpr(expr: Assign): R
         fun visitBinaryExpr(expr: Binary): R
         fun visitCallExpr(expr: Call): R
+        fun visitGetExpr(expr: Get): R
         fun visitGroupingExpr(expr: Grouping): R
         fun visitLiteralExpr(expr: Literal): R
         fun visitLogicalExpr(expr: Logical): R
+        fun visitSetExpr(expr: Set): R
+        fun visitThisExpr(expr: This): R
+        fun visitSuperExpr(expr: Super): R
         fun visitUnaryExpr(expr: Unary): R
         fun visitVariableExpr(expr: Variable): R
     }
@@ -30,6 +34,12 @@ abstract class Expr {
         }
     }
 
+    class Get(val obj: Expr, val name: Token) : Expr() {
+        override fun <R> accept(v: Visitor<R>): R {
+            return v.visitGetExpr(this)
+        }
+    }
+
     class Grouping(val expression: Expr) : Expr() {
         override fun <R> accept(v: Visitor<R>): R {
             return v.visitGroupingExpr(this)
@@ -45,6 +55,24 @@ abstract class Expr {
     class Logical(val left: Expr, val operator: Token, val right: Expr) : Expr() {
         override fun <R> accept(v: Visitor<R>): R {
             return v.visitLogicalExpr(this)
+        }
+    }
+
+    class Set(val obj: Expr, val name: Token, val value: Expr) : Expr() {
+        override fun <R> accept(v: Visitor<R>): R {
+            return v.visitSetExpr(this)
+        }
+    }
+
+    class This(val keyword: Token) : Expr() {
+        override fun <R> accept(v: Visitor<R>): R {
+            return v.visitThisExpr(this)
+        }
+    }
+
+    class Super(val keyword: Token, val method: Token) : Expr() {
+        override fun <R> accept(v: Visitor<R>): R {
+            return v.visitSuperExpr(this)
         }
     }
 

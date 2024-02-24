@@ -42,6 +42,11 @@ fun main(args: Array<String>) {
                     Field("arguments", "List<Expr>"),
             ),
             Ast(
+                    "Get",
+                    Field("obj", "Expr"),
+                    Field("name", "Token"),
+            ),
+            Ast(
                     "Grouping",
                     Field("expression", "Expr"),
             ),
@@ -54,6 +59,21 @@ fun main(args: Array<String>) {
                     Field("left", "Expr"),
                     Field("operator", "Token"),
                     Field("right", "Expr"),
+            ),
+            Ast(
+                    "Set",
+                    Field("obj", "Expr"),
+                    Field("name", "Token"),
+                    Field("value", "Expr"),
+            ),
+            Ast(
+                    "This",
+                    Field("keyword", "Token"),
+            ),
+            Ast(
+                    "Super",
+                    Field("keyword", "Token"),
+                    Field("method", "Token"),
             ),
             Ast(
                     "Unary",
@@ -107,6 +127,12 @@ fun main(args: Array<String>) {
                     "Var",
                     Field("name", "Token"),
                     Field("initializer", "Expr?"),
+            ),
+            Ast(
+                    "Class",
+                    Field("name", "Token"),
+                    Field("superClass", "Expr.Variable?"),
+                    Field("methods", "List<Stmt.Function>"),
             ),
     )
 }

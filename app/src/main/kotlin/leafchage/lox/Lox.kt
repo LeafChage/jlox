@@ -75,6 +75,7 @@ public class Lox {
         val statements = parser.parse()
         if (hadError) {
             // parse error
+            println("parser error")
             return
         }
 
@@ -82,6 +83,7 @@ public class Lox {
         resolver.resolve(statements)
         if (hadError) {
             // resolve error
+            println("resolve error")
             return
         }
 
